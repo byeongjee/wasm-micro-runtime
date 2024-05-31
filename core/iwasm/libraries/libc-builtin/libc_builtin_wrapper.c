@@ -989,6 +989,52 @@ clock_wrapper(wasm_exec_env_t exec_env)
     return os_time_get_boot_us() * 1000;
 }
 
+/* my custom functions */
+static void
+__cxa_pure_virtual_wrapper(wasm_exec_env_t exec_env)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%s", "__cxa_pure_virtual");
+    return;
+}
+
+static void
+__assert_fail_wrapper(wasm_exec_env_t exec_env, const char *assertion,
+                      const char *file, unsigned int line, const char *function)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%s", "__assert_fail");
+    return;
+}
+
+static double
+frexp_wrapper(wasm_exec_env_t exec_env, double x, int *e)
+{
+    printf("frexp\n");
+    return frexp(x, e);
+}
+
+static double
+round_wrapper(wasm_exec_env_t exec_env, double x)
+{
+    printf("round\n");
+    return round(x);
+}
+
+static float
+roundf_wrapper(wasm_exec_env_t exec_env, float x)
+{
+    printf("roundf\n");
+    return roundf(x);
+}
+
+static float
+expf_wrapper(wasm_exec_env_t exec_env, float x)
+{
+    printf("expf\n");
+    return expf(x);
+}
+
 #if WASM_ENABLE_SPEC_TEST != 0
 static void
 print_wrapper(wasm_exec_env_t exec_env)
@@ -1092,6 +1138,13 @@ static NativeSymbol native_symbols_libc_builtin[] = {
     REG_NATIVE_FUNC(__cxa_throw, "(**i)"),
     REG_NATIVE_FUNC(clock_gettime, "(i*)i"),
     REG_NATIVE_FUNC(clock, "()I"),
+    /* my own */
+    REG_NATIVE_FUNC(__cxa_pure_virtual, "()"),
+    REG_NATIVE_FUNC(__assert_fail, "($$i$)"),
+    REG_NATIVE_FUNC(frexp, "(F*)F"),
+    REG_NATIVE_FUNC(round, "(F)F"),
+    REG_NATIVE_FUNC(roundf, "(f)f"),
+    REG_NATIVE_FUNC(expf, "(f)f"),
 };
 
 #if WASM_ENABLE_SPEC_TEST != 0
