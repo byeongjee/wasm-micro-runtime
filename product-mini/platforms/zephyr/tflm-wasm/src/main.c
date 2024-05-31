@@ -9,23 +9,15 @@
 #include "bh_assert.h"
 #include "bh_log.h"
 #include "wasm_export.h"
-#if defined(BUILD_TARGET_RISCV64_LP64) || defined(BUILD_TARGET_RISCV32_ILP32)
-#include "test_wasm_riscv64.h"
-#else
 #include "test_wasm.h"
-#endif /* end of BUILD_TARGET_RISCV64_LP64 || BUILD_TARGET_RISCV32_ILP32 */
 
-#if defined(BUILD_TARGET_RISCV64_LP64) || defined(BUILD_TARGET_RISCV32_ILP32)
-#define CONFIG_GLOBAL_HEAP_BUF_SIZE 5120
-#define CONFIG_APP_STACK_SIZE 512
-#define CONFIG_APP_HEAP_SIZE 512
-#else /* else of BUILD_TARGET_RISCV64_LP64 || BUILD_TARGET_RISCV32_ILP32 */
 #define CONFIG_GLOBAL_HEAP_BUF_SIZE WASM_GLOBAL_HEAP_SIZE
-#define CONFIG_APP_STACK_SIZE 409600
-#define CONFIG_APP_HEAP_SIZE 409600
-#endif /* end of BUILD_TARGET_RISCV64_LP64 || BUILD_TARGET_RISCV32_ILP32 */
+#define CONFIG_APP_STACK_SIZE 32768
+#define CONFIG_APP_HEAP_SIZE 524288
 
-#define CONFIG_MAIN_THREAD_STACK_SIZE 409600
+#define CONFIG_MAIN_THREAD_STACK_SIZE 4096
+
+static char global_heap_buf[CONFIG_GLOBAL_HEAP_BUF_SIZE] = { 0 };
 
 static int app_argc;
 static char **app_argv;
@@ -85,10 +77,6 @@ app_instance_main(wasm_module_inst_t module_inst)
     return NULL;
 }
 
-#if WASM_ENABLE_GLOBAL_HEAP_POOL != 0
-static char global_heap_buf[CONFIG_GLOBAL_HEAP_BUF_SIZE] = { 0 };
-#endif
-
 void
 iwasm_main(void *arg1, void *arg2, void *arg3)
 {
@@ -133,8 +121,8 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
 #endif
 
     /* load WASM byte buffer from byte buffer of include file */
-    wasm_file_buf = (uint8 *)wasm_test_file;
-    wasm_file_size = sizeof(wasm_test_file);
+    wasm_file_buf = (uint8 *)toy_wasm;
+    wasm_file_size = sizeof(toy_wasm);
 
     printk("wasm file size: %d\n", wasm_file_size);
 
