@@ -1010,28 +1010,24 @@ __assert_fail_wrapper(wasm_exec_env_t exec_env, const char *assertion,
 static double
 frexp_wrapper(wasm_exec_env_t exec_env, double x, int *e)
 {
-    printf("frexp\n");
     return frexp(x, e);
 }
 
 static double
 round_wrapper(wasm_exec_env_t exec_env, double x)
 {
-    printf("round\n");
     return round(x);
 }
 
 static float
 roundf_wrapper(wasm_exec_env_t exec_env, float x)
 {
-    printf("roundf\n");
     return roundf(x);
 }
 
 static float
 expf_wrapper(wasm_exec_env_t exec_env, float x)
 {
-    printf("expf\n");
     return expf(x);
 }
 
