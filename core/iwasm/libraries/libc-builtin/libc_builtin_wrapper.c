@@ -1130,7 +1130,7 @@ static NativeSymbol native_symbols_libc_builtin[] = {
     REG_NATIVE_FUNC(toupper, "(i)i"),
     REG_NATIVE_FUNC(isalnum, "(i)i"),
     REG_NATIVE_FUNC(emscripten_memcpy_big, "(**~)i"),
-    REG_NATIVE_FUNC(abort, "(i)"),
+    REG_NATIVE_FUNC(abort, "()"),
     REG_NATIVE_FUNC(abortStackOverflow, "(i)"),
     REG_NATIVE_FUNC(nullFunc_X, "(i)"),
     REG_NATIVE_FUNC(__cxa_allocate_exception, "(i)i"),
