@@ -27,7 +27,8 @@ set (WAMR_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../..)
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 include (${WAMR_ROOT_DIR}/core/shared/platform/common/math/platform_api_math.cmake)
 
+zephyr_library_include_directories(${ZEPHYR_BASE}/../modules/hal/ambiq)
+
 target_sources(app PRIVATE
                ${WAMR_RUNTIME_LIB_SOURCE}
                src/main.c)
-
