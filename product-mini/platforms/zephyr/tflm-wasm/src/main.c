@@ -10,6 +10,7 @@
 #include "bh_log.h"
 #include "wasm_export.h"
 #include "test_wasm.h"
+#include "am_mcu_apollo.h"
 
 #define CONFIG_GLOBAL_HEAP_BUF_SIZE WASM_GLOBAL_HEAP_SIZE
 #define CONFIG_APP_STACK_SIZE 32768
@@ -80,7 +81,7 @@ app_instance_main(wasm_module_inst_t module_inst)
 void
 iwasm_main(void *arg1, void *arg2, void *arg3)
 {
-    int start, end;
+    int start, module_init, module_load, finish_main, end;
     start = k_uptime_get_32();
     uint8 *wasm_file_buf = NULL;
     uint32 wasm_file_size;
@@ -133,9 +134,13 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
         goto fail1;
     }
 
+    module_load = k_uptime_get_32();
+    printf("elapsed (module load): %d\n", (module_load - start));
+
     printk("global heap size: %d\n", WASM_GLOBAL_HEAP_SIZE);
     printk("heap size: %d\n", CONFIG_APP_HEAP_SIZE);
     printk("stack size: %d\n", CONFIG_APP_STACK_SIZE);
+    printk("clock frequency: %d\n", sys_clock_hw_cycles_per_sec());
 
     /* instantiate the module */
     if (!(wasm_module_inst = wasm_runtime_instantiate(
@@ -145,10 +150,13 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
         goto fail2;
     }
 
-    printk("invoking main function\n");
-
+    module_init = k_uptime_get_32();
+    printf("elapsed (module instantiation): %d\n", (module_init - module_load));
     /* invoke the main function */
     app_instance_main(wasm_module_inst);
+
+    finish_main = k_uptime_get_32();
+    printf("elapsed (finish main): %d\n", (finish_main - module_init));
 
     /* destroy the module instance */
     wasm_runtime_deinstantiate(wasm_module_inst);
@@ -167,7 +175,7 @@ fail1:
 }
 
 #define MAIN_THREAD_STACK_SIZE (CONFIG_MAIN_THREAD_STACK_SIZE)
-#define MAIN_THREAD_PRIORITY 5
+#define MAIN_THREAD_PRIORITY -1
 
 K_THREAD_STACK_DEFINE(iwasm_main_thread_stack, MAIN_THREAD_STACK_SIZE);
 static struct k_thread iwasm_main_thread;
@@ -180,18 +188,22 @@ iwasm_init(void)
         iwasm_main, NULL, NULL, NULL, MAIN_THREAD_PRIORITY, 0, K_NO_WAIT);
     return tid ? true : false;
 }
-
-#if KERNEL_VERSION_NUMBER < 0x030400 /* version 3.4.0 */
-void
-main(void)
-{
-    iwasm_init();
-}
-#else
 int
 main(void)
 {
+    uint32_t status;
+
+    // am_hal_pwrctrl_low_power_init();
+    status = am_hal_pwrctrl_mcu_mode_select(
+        AM_HAL_PWRCTRL_MCU_MODE_HIGH_PERFORMANCE);
+
+    if (status == AM_HAL_STATUS_SUCCESS) {
+        printk("MCU mode selected successfully\n");
+    }
+    else {
+        printk("Failed to select MCU mode: 0x%08x\n", status);
+    }
+
     iwasm_init();
     return 0;
 }
-#endif
