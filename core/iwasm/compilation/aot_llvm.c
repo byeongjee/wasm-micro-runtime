@@ -11,6 +11,7 @@
 #include "../aot/aot_runtime.h"
 #include "../aot/aot_intrinsic.h"
 #include "../interpreter/wasm_runtime.h"
+#include <unistd.h>
 
 #if WASM_ENABLE_DEBUG_AOT != 0
 #include "debug/dwarf_extractor.h"
