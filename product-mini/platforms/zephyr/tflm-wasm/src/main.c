@@ -188,7 +188,7 @@ main(void)
 {
     uint32_t status;
 
-    // am_hal_pwrctrl_low_power_init();
+    am_hal_pwrctrl_low_power_init();
     status = am_hal_pwrctrl_mcu_mode_select(
         AM_HAL_PWRCTRL_MCU_MODE_HIGH_PERFORMANCE);
 
