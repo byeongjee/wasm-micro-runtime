@@ -137,7 +137,6 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
     module_load = k_uptime_get_32();
     printf("elapsed (module load): %d\n", (module_load - start));
 
-    printk("global heap size: %d\n", WASM_GLOBAL_HEAP_SIZE);
     printk("heap size: %d\n", CONFIG_APP_HEAP_SIZE);
     printk("stack size: %d\n", CONFIG_APP_STACK_SIZE);
     printk("clock frequency: %d\n", sys_clock_hw_cycles_per_sec());
