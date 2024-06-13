@@ -12,13 +12,9 @@
 #include "test_wasm.h"
 #include "am_mcu_apollo.h"
 
-#define CONFIG_GLOBAL_HEAP_BUF_SIZE WASM_GLOBAL_HEAP_SIZE
-#define CONFIG_APP_STACK_SIZE 32768
-#define CONFIG_APP_HEAP_SIZE 524288
-
-#define CONFIG_MAIN_THREAD_STACK_SIZE 4096
-
-static char global_heap_buf[CONFIG_GLOBAL_HEAP_BUF_SIZE] = { 0 };
+#define CONFIG_APP_STACK_SIZE 256000
+#define CONFIG_APP_HEAP_SIZE 1228800
+#define CONFIG_MAIN_THREAD_STACK_SIZE 256000
 
 static int app_argc;
 static char **app_argv;
