@@ -19,6 +19,12 @@
 static int app_argc;
 static char **app_argv;
 
+void
+gpio_toggle(wasm_exec_env_t exec_env)
+{
+    am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
+}
+
 /**
  * Find the unique main function from a WASM module instance
  * and execute that function.
@@ -117,6 +123,18 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
     bh_log_set_verbose_level(log_verbose_level);
 #endif
 
+    /* register native symbols */
+    static NativeSymbol native_symbols[] = { { "gpio_toggle", gpio_toggle, "()"
+
+    } };
+    int n_native_symbols = sizeof(native_symbols) / sizeof(NativeSymbol);
+
+    if (!wasm_runtime_register_natives("env", native_symbols,
+                                       n_native_symbols)) {
+        printf("Register natives failed.\n");
+        goto fail1;
+    }
+
     /* load WASM byte buffer from byte buffer of include file */
     wasm_file_buf = (uint8 *)wasm_aot_file;
     wasm_file_size = sizeof(wasm_aot_file);
@@ -148,7 +166,11 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
     module_init = k_uptime_get_32();
     printf("elapsed (module instantiation): %d\n", (module_init - module_load));
     /* invoke the main function */
+
+    /* pin 23 measures the time between app instance main */
+    am_hal_gpio_state_write(23, AM_HAL_GPIO_OUTPUT_TOGGLE);
     app_instance_main(wasm_module_inst);
+    am_hal_gpio_state_write(23, AM_HAL_GPIO_OUTPUT_TOGGLE);
 
     finish_main = k_uptime_get_32();
     printf("elapsed (finish main): %d\n", (finish_main - module_init));
@@ -198,6 +220,13 @@ main(void)
     else {
         printk("Failed to select MCU mode: 0x%08x\n", status);
     }
+
+    //
+    // Initialize GPIOs
+    //
+    am_hal_gpio_pincfg_t am_hal_gpio_pincfg_output = AM_HAL_GPIO_PINCFG_OUTPUT;
+    am_hal_gpio_pinconfig(22, am_hal_gpio_pincfg_output);
+    am_hal_gpio_pinconfig(23, am_hal_gpio_pincfg_output);
 
     iwasm_init();
     return 0;
