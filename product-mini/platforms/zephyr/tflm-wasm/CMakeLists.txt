@@ -10,7 +10,7 @@ enable_language (ASM)
 
 set (WAMR_BUILD_PLATFORM "zephyr")
 
-set (WAMR_BUILD_TARGET "THUMBV7")
+set (WAMR_BUILD_TARGET "THUMBV7_VFP")
 set (WAMR_BUILD_INTERP 1)
 set (WAMR_BUILD_JIT 0)
 set (WAMR_BUILD_AOT 1)
@@ -32,3 +32,5 @@ zephyr_library_include_directories(${ZEPHYR_BASE}/../modules/hal/ambiq)
 target_sources(app PRIVATE
                ${WAMR_RUNTIME_LIB_SOURCE}
                src/main.c)
+
+target_compile_options(app PRIVATE -static -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O3)
