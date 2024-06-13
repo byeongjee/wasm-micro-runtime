@@ -118,8 +118,8 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
 #endif
 
     /* load WASM byte buffer from byte buffer of include file */
-    wasm_file_buf = (uint8 *)toy_wasm;
-    wasm_file_size = sizeof(toy_wasm);
+    wasm_file_buf = (uint8 *)wasm_aot_file;
+    wasm_file_size = sizeof(wasm_aot_file);
 
     printk("wasm file size: %d\n", wasm_file_size);
 
