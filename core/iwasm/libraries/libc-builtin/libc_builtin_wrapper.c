@@ -412,6 +412,14 @@ printf_wrapper(wasm_exec_env_t exec_env, const char *format, _va_list va_args)
     return (int)ctx.count;
 }
 
+// we use this for MicroPrintf
+static int
+vfprintf_wrapper(wasm_exec_env_t exec_env, FILE *stream, const char *format,
+                 _va_list va_args)
+{
+    return printf_wrapper(exec_env, format, va_args);
+}
+
 static int
 sprintf_wrapper(wasm_exec_env_t exec_env, char *str, const char *format,
                 _va_list va_args)
@@ -1085,6 +1093,7 @@ static NativeSymbol native_symbols_libc_builtin[] = {
     REG_NATIVE_FUNC(sprintf, "($$*)i"),
     REG_NATIVE_FUNC(snprintf, "(*~$*)i"),
     { "vprintf", printf_wrapper, "($*)i", NULL },
+    { "vfprintf", vfprintf_wrapper, "(*$*)i", NULL },
     { "vsprintf", sprintf_wrapper, "($$*)i", NULL },
     { "vsnprintf", snprintf_wrapper, "(*~$*)i", NULL },
     REG_NATIVE_FUNC(puts, "($)i"),
