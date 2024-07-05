@@ -15,17 +15,18 @@
 
 #define CONFIG_APP_STACK_SIZE 256000
 #define CONFIG_APP_HEAP_SIZE 256000
+#define CONFIG_GLOBAL_HEAP_BUF_SIZE WASM_GLOBAL_HEAP_SIZE
 
 void
 gpio_toggle(wasm_exec_env_t exec_env)
 {
-    am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
+    // am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
 }
 
 void
 delay(wasm_exec_env_t exec_env, int ms)
 {
-    am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
+    // am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
 }
 
 typedef struct {
@@ -52,10 +53,11 @@ app_instance_main(wasm_module_inst_t module_inst)
 {
     const char *exception;
 
-    void *input_native_ptr = NULL;
-    void *input_tensor_native_ptr = NULL;
-    void *output_native_ptr = NULL;
-    void *output_tensor_native_ptr = NULL;
+    Input *input_native_ptr = NULL;
+    float32 *input_tensor_native_ptr = NULL;
+    Output *output_native_ptr = NULL;
+    float32 *output_tensor_native_ptr = NULL;
+    uint32 argv[2];
 
     wasm_exec_env_t exec_env =
         wasm_runtime_create_exec_env(module_inst, CONFIG_APP_STACK_SIZE);
@@ -64,8 +66,26 @@ app_instance_main(wasm_module_inst_t module_inst)
         return NULL;
     }
 
-    uint32_t input_tensor_ptr = wasm_runtime_module_malloc(
-        module_inst, INPUT_TENSOR_SIZE, &input_tensor_native_ptr);
+    wasm_function_inst_t malloc_fn =
+        wasm_runtime_lookup_function(module_inst, "malloc");
+    if (!malloc_fn) {
+        printk("Fail to find function: malloc\n");
+        return NULL;
+    }
+    wasm_function_inst_t main_func =
+        wasm_runtime_lookup_function(module_inst, "_mlir_ciface_main");
+    if (!main_func) {
+        printk("Fail to find function: _mlir_ciface_main\n");
+        return NULL;
+    }
+
+    argv[0] = INPUT_TENSOR_SIZE;
+    wasm_runtime_call_wasm(exec_env, malloc_fn, 1, argv);
+    uint32_t input_tensor_ptr = argv[0];
+
+    input_tensor_native_ptr =
+        wasm_runtime_addr_app_to_native(module_inst, input_tensor_ptr);
+
     // preprocess data
     float32 scaled_data[28 * 28];
     for (int i = 0; i < 28 * 28; i++) {
@@ -73,8 +93,11 @@ app_instance_main(wasm_module_inst_t module_inst)
     }
     memcpy(input_tensor_native_ptr, scaled_data, INPUT_TENSOR_SIZE);
 
-    uint32_t input_ptr = wasm_runtime_module_malloc(module_inst, sizeof(Input),
-                                                    &input_native_ptr);
+    argv[0] = sizeof(Input);
+    wasm_runtime_call_wasm(exec_env, malloc_fn, 1, argv);
+    uint32_t input_ptr = argv[0];
+
+    input_native_ptr = wasm_runtime_addr_app_to_native(module_inst, input_ptr);
     Input input = {
         .base_ptr = input_tensor_ptr,
         .data = input_tensor_ptr,
@@ -84,48 +107,48 @@ app_instance_main(wasm_module_inst_t module_inst)
     };
     memcpy(input_native_ptr, &input, sizeof(Input));
 
-    uint32_t output_tensor_ptr = wasm_runtime_module_malloc(
-        module_inst, OUTPUT_TENSOR_SIZE, &output_tensor_native_ptr);
+    argv[0] = OUTPUT_TENSOR_SIZE;
+    wasm_runtime_call_wasm(exec_env, malloc_fn, 1, argv);
+    uint32_t output_tensor_ptr = argv[0];
 
-    uint32_t output_ptr = wasm_runtime_module_malloc(
-        module_inst, sizeof(Output), &output_native_ptr);
-    Output output = {
-        .base_ptr = output_tensor_ptr,
-        .data = output_tensor_ptr,
-        .offset = 0,
-        .sizes = { 1, 10 },
-        .strides = { 10, 1 },
-    };
-    memcpy(output_native_ptr, &output, sizeof(Output));
+    argv[0] = sizeof(Output);
+    wasm_runtime_call_wasm(exec_env, malloc_fn, 1, argv);
+    uint32_t output_ptr = argv[0];
 
-    uint32 argv[2] = { input_ptr, output_ptr };
-    wasm_function_inst_t main_func =
-        wasm_runtime_lookup_function(module_inst, "_mlir_ciface_main");
-    if (!main_func) {
-        printk("Fail to find function: _mlir_ciface_main\n");
-        return NULL;
+    argv[0] = output_ptr;
+    argv[1] = input_ptr;
+
+    am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
+    if (!wasm_runtime_call_wasm(exec_env, main_func, 2, argv)) {
+        printk("call main fail\n");
     }
+    am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
 
-    wasm_runtime_call_wasm(exec_env, main_func, 2, argv);
-
-    if (!wasm_runtime_get_exception(module_inst))
-        printk("result: 0x%x\n", argv[0]);
     if ((exception = wasm_runtime_get_exception(module_inst)))
         printk("%s\n", exception);
 
+    output_native_ptr =
+        wasm_runtime_addr_app_to_native(module_inst, output_ptr);
+
+    Output output;
+    memcpy(&output, output_native_ptr, sizeof(Output));
+    output_tensor_native_ptr =
+        wasm_runtime_addr_app_to_native(module_inst, output.data);
+
     // print output here
     for (int i = 0; i < 10; i++) {
-        printk("%d: %f\n", i, ((float32 *)output_tensor_native_ptr)[i]);
+        printk("%d: %f\n", i, output_tensor_native_ptr[i]);
     }
 
-    wasm_runtime_module_free(module_inst, input_tensor_ptr);
-    wasm_runtime_module_free(module_inst, output_tensor_ptr);
-    wasm_runtime_module_free(module_inst, input_ptr);
-    wasm_runtime_module_free(module_inst, output_ptr);
+    // free?
     wasm_runtime_destroy_exec_env(exec_env);
 
     return NULL;
 }
+
+#if WASM_ENABLE_GLOBAL_HEAP_POOL != 0
+static char global_heap_buf[CONFIG_GLOBAL_HEAP_BUF_SIZE] = { 0 };
+#endif
 
 void
 iwasm_main()

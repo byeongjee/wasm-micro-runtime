@@ -25,6 +25,11 @@ gpio_toggle(wasm_exec_env_t exec_env)
     am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
 }
 
+void
+delay(wasm_exec_env_t exec_env, int ms)
+{
+    am_hal_gpio_state_write(22, AM_HAL_GPIO_OUTPUT_TOGGLE);
+}
 /**
  * Find the unique main function from a WASM module instance
  * and execute that function.
@@ -126,7 +131,12 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
     /* register native symbols */
     static NativeSymbol native_symbols[] = { { "gpio_toggle", gpio_toggle, "()"
 
-    } };
+                                             },
+                                             {
+                                                 "delay",
+                                                 delay,
+                                                 "(i)",
+                                             } };
     int n_native_symbols = sizeof(native_symbols) / sizeof(NativeSymbol);
 
     if (!wasm_runtime_register_natives("env", native_symbols,
@@ -208,6 +218,15 @@ iwasm_init(void)
 int
 main(void)
 {
+    am_hal_cachectrl_config_t am_hal_cachectrl_user = {
+        .bLRU = 0,
+        .eDescript = AM_HAL_CACHECTRL_DESCR_1WAY_128B_4096E,
+        .eMode = AM_HAL_CACHECTRL_CONFIG_MODE_INSTR_DATA,
+    };
+
+    am_hal_cachectrl_config(&am_hal_cachectrl_user);
+    am_hal_cachectrl_enable();
+
     uint32_t status;
 
     am_hal_pwrctrl_low_power_init();
